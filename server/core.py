@@ -350,3 +350,83 @@ def cut_clip(video, start, end, dest):
            "-c:v", "libx264", "-c:a", "aac", "-loglevel", "error", dest]
     subprocess.run(cmd, check=True)
     return dest
+
+
+# ---------- 配置 / 省电模式 ----------
+import multiprocessing
+CONFIG_FILE = os.path.join(HERE, "config.json")
+NCPU = os.cpu_count() or 8
+_config = {"power_save": False}
+
+
+def load_config():
+    global _config
+    try:
+        _config.update(json.load(open(CONFIG_FILE, encoding="utf-8")))
+    except Exception:
+        pass
+    apply_power(_config.get("power_save", False))
+    return _config
+
+
+def save_config():
+    json.dump(_config, open(CONFIG_FILE, "w", encoding="utf-8"), ensure_ascii=False)
+
+
+def apply_power(save):
+    """省电模式：把计算线程数限制到约一半核心，CPU 占用减半（速度变慢）。"""
+    global _face
+    n = max(1, NCPU // 2) if save else NCPU
+    try:
+        torch.set_num_threads(n)
+    except Exception:
+        pass
+    try:
+        cv2.setNumThreads(n)
+    except Exception:
+        pass
+    os.environ["OMP_NUM_THREADS"] = str(n)
+    os.environ["MKL_NUM_THREADS"] = str(n)
+    _config["power_save"] = bool(save)
+    _face = None   # 让人脸引擎下次以新线程数重建
+    return n
+
+
+def set_power(save):
+    apply_power(save); save_config()
+    return _config
+
+
+def cache_info():
+    total = 0
+    for dp, _, files in os.walk(CACHE):
+        for f in files:
+            try:
+                total += os.path.getsize(os.path.join(dp, f))
+            except Exception:
+                pass
+    return {"bytes": total, "mb": round(total / 1024 / 1024, 1)}
+
+
+def cache_clear(thumbs_only=False):
+    import shutil
+    removed = 0
+    if thumbs_only:
+        if os.path.isdir(THUMBS):
+            shutil.rmtree(THUMBS); os.makedirs(THUMBS, exist_ok=True); removed = 1
+    else:
+        for f in os.listdir(CACHE):
+            p = os.path.join(CACHE, f)
+            try:
+                if os.path.isdir(p):
+                    shutil.rmtree(p)
+                else:
+                    os.remove(p)
+                removed += 1
+            except Exception:
+                pass
+        os.makedirs(THUMBS, exist_ok=True)
+    return removed
+
+
+load_config()

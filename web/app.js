@@ -1,5 +1,5 @@
-// DMORE 智能脸谱 - 前端逻辑（第一期）
-const DIR = "/path/to/your/photos";
+// DMORE 智能脸谱 - 前端逻辑
+let DIR = localStorage.getItem('dmore_dir') || "/path/to/your/photos";
 const $  = (s,r=document)=>r.querySelector(s);
 const $$ = (s,r=document)=>[...r.querySelectorAll(s)];
 const enc = encodeURIComponent;
@@ -264,3 +264,74 @@ const _goto3=gotoScreen;gotoScreen=function(id){_goto3(id);
   if(id==='batch'){const lr=lastResults();const el=$('#batch-info');if(el)el.textContent=lr?`将对「${lr.kind}」的 ${lr.paths.length} 张结果执行(复制/移动)`:'还没有结果，请先搜索/筛选';}
 };
 $$('.nav').forEach(n=>n.addEventListener('click',()=>gotoScreen(n.dataset.s)));
+
+// ===== 设置项：图库切换 / 省电 / 缓存 / 文件夹选择 =====
+async function pickFolder(){
+  try{ if(window.pywebview&&window.pywebview.api&&window.pywebview.api.pick_folder){
+    const p=await window.pywebview.api.pick_folder(); return p||''; } }catch(e){}
+  return (prompt('输入文件夹绝对路径：', DIR)||'').trim();
+}
+function baseName(p){return p.replace(/\/+$/,'').split('/').pop()||p;}
+function setDir(path){ if(!path)return; DIR=path; localStorage.setItem('dmore_dir',DIR);
+  const ln=$('#lib-name'); if(ln)ln.textContent=baseName(DIR);
+  // 清掉各页已加载标记，切库后重新拉
+  Object.keys(LOADED).forEach(k=>LOADED[k]=0); RESULTS.industry=[];
+  gotoScreen('dashboard');
+}
+// 图库列表（localStorage）
+function getLibs(){ try{return JSON.parse(localStorage.getItem('dmore_libs'))||[];}catch(e){return [];} }
+function setLibs(v){ localStorage.setItem('dmore_libs',JSON.stringify(v)); }
+function ensureLib(){ let l=getLibs(); if(!l.find(x=>x.path===DIR)){l.unshift({path:DIR});setLibs(l);} return getLibs(); }
+function renderLibs(){ const el=$('#lib-list'); if(!el)return; const libs=ensureLib();
+  el.innerHTML=libs.map((lb,i)=>`<div class="li">
+    <span style="font-size:20px">🗂️</span>
+    <div style="cursor:pointer" onclick="setDir('${lb.path.replace(/'/g,"\\'")}')"><b>${baseName(lb.path)}</b>${lb.path===DIR?' <span class="tagpill" style="background:var(--accent);color:#fff">当前</span>':''}<div class="muted">${lb.path}</div></div>
+    <div style="margin-left:auto;display:flex;gap:8px">
+      <button class="btn ghost" onclick="setDir('${lb.path.replace(/'/g,"\\'")}')">切换</button>
+      <button class="btn ghost" onclick="removeLib(${i})">取消</button>
+    </div></div>`).join('');
+}
+window.removeLib=(i)=>{const l=getLibs();const lb=l[i];if(!lb)return;
+  if(lb.path===DIR){alert('不能移除当前正在使用的图库，请先切换到别的图库');return;}
+  if(!confirm('从列表移除该图库？(只移除列表项，不删除任何文件)'))return;
+  l.splice(i,1);setLibs(l);renderLibs();};
+async function addLib(){const p=await pickFolder();if(!p)return;const l=getLibs();if(l.find(x=>x.path===p)){alert('已在列表中');return;}l.push({path:p});setLibs(l);renderLibs();}
+
+// 省电
+async function loadPower(){try{const d=await (await fetch('/api/power')).json();
+  const sw=$('#power-switch'); if(sw)sw.checked=d.power_save;
+  const lab=$('#power-label'); if(lab)lab.textContent=d.power_save?'省电':'全速';
+}catch(e){}}
+async function setPower(save){try{const d=await api('/api/power',{save});
+  const lab=$('#power-label'); if(lab)lab.textContent=save?'省电':'全速';
+  const sw=$('#power-switch'); if(sw)sw.checked=save;
+  const h=$('#power-hint'); if(h)h.textContent=save?`已限制到约 ${d.threads}/${d.ncpu} 核，CPU 不会占满。`:`全速：用满 ${d.ncpu} 核，最快。`;
+}catch(e){alert('切换失败：'+e.message);}}
+
+// 缓存
+async function loadCache(){try{const d=await (await fetch('/api/cache/info')).json();const el=$('#cache-size');if(el)el.textContent=d.mb>=1024?(d.mb/1024).toFixed(2)+' GB':d.mb+' MB';}catch(e){}}
+async function clearCache(){if(!confirm('清理索引/缩略图缓存？(只删可重建的缓存，不动模型和原图；下次用会自动重建)'))return;
+  try{const d=await api('/api/cache/clear',{thumbs_only:false});alert(d.message);loadCache();Object.keys(LOADED).forEach(k=>LOADED[k]=0);}catch(e){alert('失败：'+e.message);}}
+
+// 统一 data-act 派发（新增项）
+document.addEventListener('click',async e=>{const b=e.target.closest('[data-act]');if(!b)return;
+  const a=b.dataset.act;
+  if(a==='pick-lib'){const p=await pickFolder();setDir(p);}
+  else if(a==='toggle-power'){const sw=$('#power-switch');const nv=!(sw&&sw.checked);setPower(nv);}
+  else if(a==='goto-settings'){gotoScreen('settings');}
+  else if(a==='pick-vdir'){const p=await pickFolder();if(p)$('#v-dir').value=p;}
+  else if(a==='cache-clear'){clearCache();}
+  else if(a==='add-lib'){addLib();}
+});
+// 省电开关 change
+document.addEventListener('change',e=>{if(e.target&&e.target.id==='power-switch')setPower(e.target.checked);});
+
+// 进入设置/图库页时加载
+const _goto4=gotoScreen;gotoScreen=function(id){_goto4(id);
+  if(id==='settings'){loadCache();loadPower();}
+  if(id==='library')renderLibs();
+};
+$$('.nav').forEach(n=>n.addEventListener('click',()=>gotoScreen(n.dataset.s)));
+
+// 初始化品牌/图库名/省电
+(function(){const ln=$('#lib-name');if(ln)ln.textContent=baseName(DIR);loadPower();})();

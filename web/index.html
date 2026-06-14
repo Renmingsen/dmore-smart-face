@@ -120,7 +120,14 @@
   .timeline .seg{position:absolute;top:0;bottom:0;background:linear-gradient(var(--accent),var(--accent2));opacity:.85}
   .timeline .marker{position:absolute;top:0;bottom:0;width:2px;background:#fff}
   /* 品牌：D 标 + 脸谱 */
-  .brand .emblem{width:38px;height:44px;flex:0 0 38px}
+  .brand .emblem{width:40px;height:40px;flex:0 0 40px}
+  /* 开关 */
+  .switch{position:relative;display:inline-block;width:42px;height:24px}
+  .switch input{opacity:0;width:0;height:0}
+  .slider-sw{position:absolute;inset:0;background:#ccd0d6;border-radius:24px;transition:.2s;cursor:pointer}
+  .slider-sw:before{content:"";position:absolute;height:18px;width:18px;left:3px;top:3px;background:#fff;border-radius:50%;transition:.2s}
+  .switch input:checked + .slider-sw{background:var(--accent)}
+  .switch input:checked + .slider-sw:before{transform:translateX(18px)}
   .brandfoot{margin:22px 8px 8px;padding:16px 10px 6px;text-align:center;border-top:1px solid #262b35}
   .brandfoot img{width:110px;opacity:.92}
   .brandfoot svg{width:52px;display:block;margin:10px auto 0;opacity:.9}
@@ -132,26 +139,13 @@
   <!-- 顶栏 -->
   <header class="topbar">
     <div class="brand">
-      <svg class="emblem" viewBox="0 0 80 92" xmlns="http://www.w3.org/2000/svg">
+      <svg class="emblem" viewBox="0 0 80 80" xmlns="http://www.w3.org/2000/svg">
         <defs><linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
           <stop offset="0" stop-color="#e23048"/><stop offset="1" stop-color="#a50d24"/></linearGradient></defs>
-        <rect x="0" y="0" width="80" height="92" rx="18" fill="url(#bg)"/>
-        <image href="assets/d_white.png" x="14" y="11" width="52" height="25"/>
-        <g>
-          <path d="M40 40 C26 40 19 50 19 62 C19 78 30 88 40 88 C50 88 61 78 61 62 C61 50 54 40 40 40 Z" fill="#ffffff" fill-opacity="0.06" stroke="#ffd56b" stroke-width="2.4"/>
-          <path d="M40 43 q-4.5 5 0 10 q4.5 -5 0 -10" fill="#ffd56b"/>
-          <path d="M25 60 q7 -6 13 -1" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round"/>
-          <path d="M42 59 q6 -5 13 1" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round"/>
-          <ellipse cx="31" cy="68" rx="5.2" ry="3.2" fill="#fff"/>
-          <ellipse cx="49" cy="68" rx="5.2" ry="3.2" fill="#fff"/>
-          <circle cx="31" cy="68" r="1.5" fill="#a50d24"/>
-          <circle cx="49" cy="68" r="1.5" fill="#a50d24"/>
-          <path d="M24 77 q4 4 0 9" fill="none" stroke="#ffd56b" stroke-width="2" stroke-linecap="round"/>
-          <path d="M56 77 q-4 4 0 9" fill="none" stroke="#ffd56b" stroke-width="2" stroke-linecap="round"/>
-          <path d="M33 81 q7 5 14 0" fill="none" stroke="#fff" stroke-width="2.4" stroke-linecap="round"/>
-        </g>
+        <rect x="0" y="0" width="80" height="80" rx="18" fill="url(#bg)"/>
+        <image href="assets/d_white.png" x="13" y="27" width="54" height="26"/>
       </svg>
-      <div>DMORE 智能脸谱<small>LOCAL VISION STUDIO</small></div>
+      <div>DMORE 智能脸谱<small>DMORE VISION · 智能识图</small></div>
     </div>
     <div class="gsearch">
       <span class="ic">🔍</span>
@@ -159,10 +153,9 @@
       <span class="mode">文字搜图 ▾</span>
     </div>
     <div class="topright">
-      <span class="pill"><span class="dot"></span>本地引擎 · <b>MPS</b></span>
-      <span class="pill">图库：<b>示例图库</b> ▾</span>
-      <button class="iconbtn" title="主题">🌙</button>
-      <button class="iconbtn" title="设置">⚙️</button>
+      <span class="pill" id="power-pill" data-act="toggle-power" style="cursor:pointer" title="点击切换省电模式"><span class="dot"></span>本地引擎 · <b id="power-label">全速</b></span>
+      <span class="pill" id="lib-pill" data-act="pick-lib" style="cursor:pointer" title="点击切换图库文件夹">图库：<b id="lib-name">示例图库</b> ▾</span>
+      <button class="iconbtn" title="设置" data-act="goto-settings">⚙️</button>
     </div>
   </header>
 
@@ -194,18 +187,7 @@
     <div class="nav" data-s="settings"><span class="i">⚙️</span>设置</div>
     <div class="brandfoot">
       <img src="assets/lockup_white.png" alt="D·MORE">
-      <svg viewBox="0 0 80 56" xmlns="http://www.w3.org/2000/svg">
-        <path d="M40 6 C24 6 16 17 16 31 C16 47 28 54 40 54 C52 54 64 47 64 31 C64 17 56 6 40 6 Z" fill="#ffffff" fill-opacity="0.05" stroke="#ffd56b" stroke-width="2.2"/>
-        <path d="M40 9 q-5 6 0 12 q5 -6 0 -12" fill="#ffd56b"/>
-        <path d="M23 28 q8 -7 14 -1" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round"/>
-        <path d="M43 27 q6 -6 14 1" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round"/>
-        <ellipse cx="30" cy="36" rx="5.6" ry="3.4" fill="#fff"/><ellipse cx="50" cy="36" rx="5.6" ry="3.4" fill="#fff"/>
-        <circle cx="30" cy="36" r="1.6" fill="#a50d24"/><circle cx="50" cy="36" r="1.6" fill="#a50d24"/>
-        <path d="M22 46 q5 5 0 10" fill="none" stroke="#ffd56b" stroke-width="2" stroke-linecap="round"/>
-        <path d="M58 46 q-5 5 0 10" fill="none" stroke="#ffd56b" stroke-width="2" stroke-linecap="round"/>
-        <path d="M32 49 q8 6 16 0" fill="none" stroke="#fff" stroke-width="2.4" stroke-linecap="round"/>
-      </svg>
-      <div class="cap">智 能 脸 谱</div>
+      <div class="cap">V I S I O N</div>
     </div>
   </aside>
 
@@ -392,7 +374,8 @@
     <section class="screen" id="vsearch">
       <div class="head"><h1>视频检索</h1><p>抽关键帧 + CLIP/人脸索引 · 按内容或人物搜视频，直接跳到出现的时间点</p></div>
       <div class="toolbar">
-        <input class="input" id="v-dir" style="width:360px" value="/path/to/your/videos" title="视频文件夹">
+        <input class="input" id="v-dir" style="width:420px" value="/path/to/your/videos" title="视频文件夹">
+        <button class="btn ghost" data-act="pick-vdir">📁 选择文件夹</button>
       </div>
       <div class="toolbar">
         <input class="input" id="q-video" style="width:300px" value="工厂 流水线 工人作业">
@@ -469,14 +452,8 @@
 
     <!-- 图库与索引 -->
     <section class="screen" id="library">
-      <div class="head"><h1>图库与索引</h1><p>多图库管理 · 索引/缓存状态</p><div class="spacer"></div><button class="btn">+ 添加图库</button></div>
-      <div class="card list pad">
-        <div class="li"><span style="font-size:20px">🗂️</span><div>示例图库<div class="muted">/path/to/your/photos</div></div>
-          <div style="margin-left:auto;text-align:right"><b>4,673 张</b><div class="muted">CLIP+人脸索引 ✓ 已是最新</div></div></div>
-        <div class="li"><span style="font-size:20px">🗂️</span><div>示例图库2<div class="muted">/path/to/another/library</div></div>
-          <div style="margin-left:auto;text-align:right"><b>未索引</b><div class="muted">点击建立索引</div></div></div>
-        <div class="li"><span style="font-size:20px">➕</span><div class="muted">添加新图库文件夹…</div></div>
-      </div>
+      <div class="head"><h1>图库与索引</h1><p>多图库管理 · 点图库名切换为当前；可添加/移除</p><div class="spacer"></div><button class="btn" data-act="add-lib">+ 添加图库文件夹</button></div>
+      <div class="card list pad" id="lib-list"></div>
       <div class="card pad" style="margin-top:14px">
         <b>排除文件夹</b> <span class="muted" style="font-size:12px">（搜索时跳过，避免把输出文件夹算进来）</span>
         <div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap">
@@ -493,9 +470,11 @@
           <b>引擎</b>
           <div class="kv"><span>语义模型</span><b>中文 CLIP ViT-B/16 ▾</b></div>
           <div class="kv"><span>人脸模型</span><b>InsightFace buffalo_l ▾</b></div>
-          <div class="kv"><span>计算设备</span><b>MPS（Apple 芯片）▾</b></div>
-          <div class="kv"><span>模型下载源</span><b>魔搭 ModelScope ▾</b></div>
-          <div class="kv"><span>pip 镜像</span><b>阿里云</b></div>
+          <div class="kv"><span>计算设备</span><b>MPS（Apple 芯片）</b></div>
+          <div class="kv"><span>模型下载源</span><b>魔搭 ModelScope</b></div>
+          <div class="kv" style="align-items:center"><span>省电模式（限制 CPU 约一半）</span>
+            <label class="switch"><input type="checkbox" id="power-switch"><span class="slider-sw"></span></label></div>
+          <div class="muted" style="font-size:12px;margin-top:6px" id="power-hint">开启后建索引/检测变慢，但不会占满 CPU，可同时干别的。</div>
         </div>
         <div class="card pad">
           <b>默认阈值</b>
@@ -503,8 +482,11 @@
           <div class="slider" style="margin:12px 0">人脸匹配 <input type="range" value="35"> 0.35</div>
           <div class="slider" style="margin:12px 0">人脸置信度 <input type="range" value="80"> 0.80</div>
           <hr style="border:none;border-top:1px solid var(--line);margin:14px 0">
-          <b>缓存</b><div class="kv"><span>索引缓存</span><b>1.2 GB · 清理</b></div>
-          <div class="kv"><span>模型权重</span><b>1.0 GB</b></div>
+          <b>缓存</b>
+          <div class="kv" style="align-items:center"><span>索引/缩略图缓存</span>
+            <span><b id="cache-size">—</b> <button class="btn ghost" data-act="cache-clear" style="height:28px;padding:0 12px;margin-left:8px">清理</button></span></div>
+          <div class="kv"><span>模型权重</span><b>~0.7 GB（不清理）</b></div>
+          <div class="muted" style="font-size:12px;margin-top:6px">清理只删可重建的索引/缩略图，不动模型和原图。</div>
         </div>
       </div>
     </section>

@@ -40,8 +40,33 @@ def main():
         while True:
             time.sleep(1)
     import webview
-    webview.create_window("DMORE 智能脸谱", URL, width=1480, height=920, min_size=(1100, 700))
-    webview.start()
+
+    class Api:
+        def pick_folder(self):
+            try:
+                w = webview.windows[0]
+                res = w.create_file_dialog(webview.FOLDER_DIALOG)
+                if res:
+                    return res[0] if isinstance(res, (list, tuple)) else res
+            except Exception as e:
+                print("pick_folder err", e, flush=True)
+            return ""
+
+    webview.create_window("DMORE 智能脸谱", URL, width=1480, height=920,
+                          min_size=(1100, 700), js_api=Api())
+
+    icon_path = os.path.join(HERE, "web", "assets", "appicon.png")
+
+    def on_start():
+        try:
+            from AppKit import NSApplication, NSImage
+            img = NSImage.alloc().initByReferencingFile_(icon_path)
+            if img:
+                NSApplication.sharedApplication().setApplicationIconImage_(img)
+        except Exception as e:
+            print("set dock icon err", e, flush=True)
+
+    webview.start(on_start)
 
 
 if __name__ == "__main__":

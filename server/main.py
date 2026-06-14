@@ -391,5 +391,29 @@ def video_clip(path: str = Body(...), start: float = Body(...), end: float = Bod
     return {"ok": True, "out": out, "message": f"已剪出片段：{out}"}
 
 
+# ---------------- 省电模式 / 缓存 ----------------
+@app.get("/api/power")
+def power_get():
+    return {"power_save": core._config.get("power_save", False), "ncpu": core.NCPU}
+
+
+@app.post("/api/power")
+def power_set(save: bool = Body(..., embed=True)):
+    core.set_power(save)
+    n = max(1, core.NCPU // 2) if save else core.NCPU
+    return {"power_save": save, "threads": n, "ncpu": core.NCPU}
+
+
+@app.get("/api/cache/info")
+def cache_info():
+    return core.cache_info()
+
+
+@app.post("/api/cache/clear")
+def cache_clear(thumbs_only: bool = Body(False, embed=True)):
+    n = core.cache_clear(thumbs_only)
+    return {"ok": True, "removed": n, "message": f"已清理缓存（{n} 项），索引会在下次使用时自动重建。"}
+
+
 # 前端静态资源（放最后，避免覆盖 /api）
 app.mount("/", StaticFiles(directory=WEB, html=True), name="web")
