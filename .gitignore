@@ -1,0 +1,21 @@
+# 虚拟环境 / 模型权重（大文件，重新装即可）
+venv/
+models/
+
+# 索引缓存、缩略图缓存、人脸特征（含私有数据，禁止上传）
+cache/
+
+# 真实图库缩略图（私有产品/人物照片，禁止上传）
+web/assets/thumbs/
+prototype/assets/thumbs/
+
+# 桌面应用包（含本机硬编码路径，可重新生成）
+DMORE智能脸谱.app/
+*.command
+
+# 杂项
+__pycache__/
+*.pyc
+*.log
+.DS_Store
+results/

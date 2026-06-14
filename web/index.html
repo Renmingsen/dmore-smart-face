@@ -1,0 +1,517 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DMORE 智能脸谱 · 本地识图工作站</title>
+<link rel="icon" type="image/png" href="assets/favicon.png">
+<style>
+  :root{
+    --accent:#c8102e; --accent2:#ff5a3c; --bg:#f4f5f7; --panel:#ffffff;
+    --ink:#1d2129; --sub:#6b7280; --line:#e6e8eb; --sidebar:#1b1f27; --sidebar-ink:#c9ced8;
+    --radius:12px; --shadow:0 1px 3px rgba(0,0,0,.06),0 6px 18px rgba(0,0,0,.04);
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;height:100%;font-family:-apple-system,"PingFang SC","Microsoft YaHei",Segoe UI,sans-serif;color:var(--ink);background:var(--bg)}
+  .app{display:grid;grid-template-columns:222px 1fr;grid-template-rows:56px 1fr;height:100vh}
+  /* 顶栏 */
+  .topbar{grid-column:1/3;display:flex;align-items:center;gap:16px;padding:0 16px;background:var(--panel);border-bottom:1px solid var(--line);z-index:5}
+  .brand{display:flex;align-items:center;gap:10px;font-weight:700;font-size:16px;letter-spacing:.5px;width:190px}
+  .brand .logo{width:30px;height:30px;border-radius:8px;background:linear-gradient(135deg,var(--accent),var(--accent2));color:#fff;display:grid;place-items:center;font-size:16px}
+  .brand small{display:block;font-weight:400;font-size:10px;color:var(--sub);letter-spacing:1px}
+  .gsearch{flex:1;max-width:640px;position:relative}
+  .gsearch input{width:100%;height:36px;border:1px solid var(--line);border-radius:20px;padding:0 40px 0 38px;font-size:14px;background:#fafbfc;outline:none}
+  .gsearch input:focus{border-color:var(--accent);background:#fff}
+  .gsearch .ic{position:absolute;left:13px;top:8px;color:var(--sub)}
+  .gsearch .mode{position:absolute;right:6px;top:5px;font-size:11px;color:var(--sub);background:#eef0f3;border-radius:14px;padding:5px 10px;cursor:pointer}
+  .topright{display:flex;align-items:center;gap:10px;margin-left:auto}
+  .pill{font-size:12px;color:var(--sub);background:#eef0f3;border-radius:14px;padding:5px 11px;display:flex;align-items:center;gap:5px}
+  .pill b{color:var(--ink)}
+  .dot{width:7px;height:7px;border-radius:50%;background:#22c55e}
+  .iconbtn{width:34px;height:34px;border-radius:8px;border:1px solid var(--line);background:#fff;cursor:pointer;font-size:15px}
+  /* 侧栏 */
+  .side{background:var(--sidebar);color:var(--sidebar-ink);overflow-y:auto;padding:10px 10px 30px}
+  .navgroup{font-size:11px;color:#6b7280;letter-spacing:1px;margin:16px 12px 6px;text-transform:uppercase}
+  .nav{display:flex;align-items:center;gap:10px;padding:9px 12px;border-radius:9px;font-size:13.5px;cursor:pointer;color:var(--sidebar-ink);transition:.12s}
+  .nav:hover{background:#262b35;color:#fff}
+  .nav.active{background:linear-gradient(135deg,var(--accent),var(--accent2));color:#fff;box-shadow:0 4px 12px rgba(200,16,46,.35)}
+  .nav .i{width:18px;text-align:center}
+  .nav .badge{margin-left:auto;font-size:10px;background:rgba(255,255,255,.16);padding:2px 7px;border-radius:10px}
+  /* 主区 */
+  .main{overflow-y:auto;padding:20px 24px 40px}
+  .screen{display:none;animation:fade .2s ease}
+  .screen.show{display:block}
+  @keyframes fade{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
+  .head{display:flex;align-items:flex-end;gap:12px;margin-bottom:16px}
+  .head h1{margin:0;font-size:22px}
+  .head p{margin:0;color:var(--sub);font-size:13px}
+  .head .spacer{flex:1}
+  .btn{height:36px;padding:0 16px;border-radius:9px;border:none;background:var(--accent);color:#fff;font-size:13.5px;cursor:pointer;display:inline-flex;align-items:center;gap:6px}
+  .btn.ghost{background:#fff;color:var(--ink);border:1px solid var(--line)}
+  .btn.dark{background:#1b1f27}
+  /* 卡片 / 网格 */
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow)}
+  .pad{padding:16px}
+  .grid-stat{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:18px}
+  .stat{padding:16px}
+  .stat .n{font-size:28px;font-weight:700}
+  .stat .l{color:var(--sub);font-size:12.5px;margin-top:2px}
+  .stat .t{font-size:11px;margin-top:8px;color:#22a06b}
+  .row2{display:grid;grid-template-columns:1.4fr 1fr;gap:16px}
+  .toolbar{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-bottom:14px}
+  .input,.select{height:34px;border:1px solid var(--line);border-radius:8px;padding:0 10px;font-size:13px;background:#fff;outline:none}
+  .input:focus{border-color:var(--accent)}
+  .chip{font-size:12px;padding:6px 12px;border-radius:16px;background:#fff;border:1px solid var(--line);cursor:pointer}
+  .chip.on{background:var(--accent);color:#fff;border-color:var(--accent)}
+  .slider{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--sub)}
+  .slider input{accent-color:var(--accent)}
+  .gallery{display:grid;grid-template-columns:repeat(auto-fill,minmax(132px,1fr));gap:10px}
+  .thumb{position:relative;border-radius:10px;overflow:hidden;aspect-ratio:1;background:#e9ebef;cursor:pointer;border:2px solid transparent}
+  .thumb img{width:100%;height:100%;object-fit:cover;display:block}
+  .thumb .score{position:absolute;left:5px;bottom:5px;font-size:10px;background:rgba(0,0,0,.62);color:#fff;padding:2px 6px;border-radius:6px}
+  .thumb .tagdot{position:absolute;right:5px;top:5px;width:9px;height:9px;border-radius:50%;border:2px solid #fff}
+  .thumb.sel{border-color:var(--accent)}
+  .thumb:hover{outline:2px solid rgba(200,16,46,.3)}
+  /* 人物圈 */
+  .people{display:grid;grid-template-columns:repeat(auto-fill,minmax(118px,1fr));gap:16px}
+  .person{text-align:center;cursor:pointer}
+  .person .ava{width:84px;height:84px;border-radius:50%;margin:0 auto;overflow:hidden;border:3px solid #fff;box-shadow:var(--shadow)}
+  .person .ava img{width:100%;height:100%;object-fit:cover}
+  .person .nm{font-size:13px;margin-top:8px;font-weight:600}
+  .person .ct{font-size:11px;color:var(--sub)}
+  /* 进度条 / 列表 */
+  .bar{height:8px;border-radius:6px;background:#eef0f3;overflow:hidden}
+  .bar > i{display:block;height:100%;background:linear-gradient(90deg,var(--accent),var(--accent2))}
+  .barrow{display:grid;grid-template-columns:90px 1fr 44px;gap:10px;align-items:center;font-size:12.5px;margin:10px 0}
+  .list .li{display:flex;align-items:center;gap:12px;padding:11px 4px;border-bottom:1px solid var(--line);font-size:13px}
+  .list .li:last-child{border:none}
+  .mini{width:46px;height:46px;border-radius:8px;object-fit:cover}
+  .muted{color:var(--sub)}
+  .tagpill{font-size:11px;padding:3px 9px;border-radius:12px;background:#eef0f3;color:#374151}
+  .kv{display:flex;justify-content:space-between;font-size:12.5px;padding:7px 0;border-bottom:1px dashed var(--line)}
+  .split{display:grid;grid-template-columns:1fr 300px;gap:16px;align-items:start}
+  .insp h3{margin:0 0 4px;font-size:15px}
+  .facebox{display:flex;gap:8px;margin:10px 0}
+  .facebox img{width:50px;height:50px;border-radius:8px;object-fit:cover}
+  .heat{display:grid;grid-template-columns:repeat(24,1fr);gap:3px}
+  .heat i{aspect-ratio:1;border-radius:2px;background:#e9ebef}
+  .seg{display:inline-flex;border:1px solid var(--line);border-radius:8px;overflow:hidden}
+  .seg button{border:none;background:#fff;padding:7px 13px;font-size:12.5px;cursor:pointer;color:var(--sub)}
+  .seg button.on{background:var(--accent);color:#fff}
+  .note{font-size:12px;color:var(--sub);background:#fff8f3;border:1px solid #ffe0d3;border-radius:8px;padding:8px 12px}
+  .twocol{columns:2;gap:16px}
+  /* 视频 */
+  .vthumb{position:relative;border-radius:10px;overflow:hidden;aspect-ratio:16/10;background:#000;cursor:pointer;border:2px solid transparent}
+  .vthumb img{width:100%;height:100%;object-fit:cover;opacity:.92}
+  .vthumb:hover{border-color:rgba(200,16,46,.4)}
+  .vthumb .play{position:absolute;inset:0;display:grid;place-items:center;color:#fff;font-size:24px;text-shadow:0 2px 8px rgba(0,0,0,.6)}
+  .vthumb .dur{position:absolute;right:6px;bottom:6px;font-size:10px;background:rgba(0,0,0,.72);color:#fff;padding:2px 6px;border-radius:5px}
+  .vthumb .ts{position:absolute;left:6px;bottom:6px;font-size:10px;background:var(--accent);color:#fff;padding:2px 6px;border-radius:5px;font-weight:600}
+  .vthumb .nm{position:absolute;left:0;right:0;top:0;padding:6px 8px;font-size:10px;color:#fff;background:linear-gradient(rgba(0,0,0,.5),transparent)}
+  .filmstrip{display:flex;gap:5px;overflow-x:auto;padding:10px 0}
+  .filmstrip .f{position:relative;flex:0 0 116px;height:74px;border-radius:7px;overflow:hidden;cursor:pointer;border:2px solid transparent}
+  .filmstrip .f.sel{border-color:var(--accent)}
+  .filmstrip .f img{width:100%;height:100%;object-fit:cover}
+  .filmstrip .f span{position:absolute;left:3px;bottom:3px;font-size:9px;background:rgba(0,0,0,.72);color:#fff;padding:1px 5px;border-radius:3px}
+  .player{aspect-ratio:16/9;background:#000;border-radius:12px;display:grid;place-items:center;color:#fff;position:relative;overflow:hidden}
+  .player img{width:100%;height:100%;object-fit:cover;opacity:.55}
+  .player .pc{position:absolute;font-size:40px}
+  .timeline{height:34px;background:#0d1117;border-radius:8px;margin-top:10px;position:relative;overflow:hidden}
+  .timeline .seg{position:absolute;top:0;bottom:0;background:linear-gradient(var(--accent),var(--accent2));opacity:.85}
+  .timeline .marker{position:absolute;top:0;bottom:0;width:2px;background:#fff}
+  /* 品牌：D 标 + 脸谱 */
+  .brand .emblem{width:38px;height:44px;flex:0 0 38px}
+  .brandfoot{margin:22px 8px 8px;padding:16px 10px 6px;text-align:center;border-top:1px solid #262b35}
+  .brandfoot img{width:110px;opacity:.92}
+  .brandfoot svg{width:52px;display:block;margin:10px auto 0;opacity:.9}
+  .brandfoot .cap{font-size:10px;color:#5b616c;letter-spacing:3px;margin-top:8px}
+</style>
+</head>
+<body>
+<div class="app">
+  <!-- 顶栏 -->
+  <header class="topbar">
+    <div class="brand">
+      <svg class="emblem" viewBox="0 0 80 92" xmlns="http://www.w3.org/2000/svg">
+        <defs><linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0" stop-color="#e23048"/><stop offset="1" stop-color="#a50d24"/></linearGradient></defs>
+        <rect x="0" y="0" width="80" height="92" rx="18" fill="url(#bg)"/>
+        <image href="assets/d_white.png" x="14" y="11" width="52" height="25"/>
+        <g>
+          <path d="M40 40 C26 40 19 50 19 62 C19 78 30 88 40 88 C50 88 61 78 61 62 C61 50 54 40 40 40 Z" fill="#ffffff" fill-opacity="0.06" stroke="#ffd56b" stroke-width="2.4"/>
+          <path d="M40 43 q-4.5 5 0 10 q4.5 -5 0 -10" fill="#ffd56b"/>
+          <path d="M25 60 q7 -6 13 -1" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round"/>
+          <path d="M42 59 q6 -5 13 1" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round"/>
+          <ellipse cx="31" cy="68" rx="5.2" ry="3.2" fill="#fff"/>
+          <ellipse cx="49" cy="68" rx="5.2" ry="3.2" fill="#fff"/>
+          <circle cx="31" cy="68" r="1.5" fill="#a50d24"/>
+          <circle cx="49" cy="68" r="1.5" fill="#a50d24"/>
+          <path d="M24 77 q4 4 0 9" fill="none" stroke="#ffd56b" stroke-width="2" stroke-linecap="round"/>
+          <path d="M56 77 q-4 4 0 9" fill="none" stroke="#ffd56b" stroke-width="2" stroke-linecap="round"/>
+          <path d="M33 81 q7 5 14 0" fill="none" stroke="#fff" stroke-width="2.4" stroke-linecap="round"/>
+        </g>
+      </svg>
+      <div>DMORE 智能脸谱<small>LOCAL VISION STUDIO</small></div>
+    </div>
+    <div class="gsearch">
+      <span class="ic">🔍</span>
+      <input placeholder="全局语义搜索：试试「工厂生产场景」「穿红色球衣的孩子」「戴护目镜的模特」…">
+      <span class="mode">文字搜图 ▾</span>
+    </div>
+    <div class="topright">
+      <span class="pill"><span class="dot"></span>本地引擎 · <b>MPS</b></span>
+      <span class="pill">图库：<b>示例图库</b> ▾</span>
+      <button class="iconbtn" title="主题">🌙</button>
+      <button class="iconbtn" title="设置">⚙️</button>
+    </div>
+  </header>
+
+  <!-- 侧栏 -->
+  <aside class="side">
+    <div class="navgroup">发现</div>
+    <div class="nav active" data-s="dashboard"><span class="i">📊</span>仪表盘</div>
+    <div class="navgroup">搜索</div>
+    <div class="nav" data-s="search"><span class="i">🔍</span>语义搜索<span class="badge">CLIP</span></div>
+    <div class="nav" data-s="similar"><span class="i">🧩</span>以图搜图</div>
+    <div class="navgroup">人物 · 脸谱核心</div>
+    <div class="nav" data-s="people"><span class="i">👥</span>人物图谱<span class="badge">38</span></div>
+    <div class="nav" data-s="findperson"><span class="i">🎯</span>找某个人</div>
+    <div class="nav" data-s="cooccur"><span class="i">🔗</span>同框关系</div>
+    <div class="navgroup">整理</div>
+    <div class="nav" data-s="tags"><span class="i">🏷️</span>智能标签</div>
+    <div class="nav" data-s="albums"><span class="i">📁</span>自动相册</div>
+    <div class="nav" data-s="dedup"><span class="i">♻️</span>去重清理<span class="badge">214</span></div>
+    <div class="nav" data-s="quality"><span class="i">✨</span>质量筛选</div>
+    <div class="navgroup">行业工作台</div>
+    <div class="nav" data-s="industry"><span class="i">🛍️</span>电商选图台</div>
+    <div class="navgroup">视频 · ffmpeg</div>
+    <div class="nav" data-s="vsearch"><span class="i">🎬</span>视频检索<span class="badge">1726</span></div>
+    <div class="nav" data-s="vshots"><span class="i">🎞️</span>分镜抽帧</div>
+    <div class="nav" data-s="vclips"><span class="i">✂️</span>片段导出</div>
+    <div class="navgroup">操作</div>
+    <div class="nav" data-s="batch"><span class="i">⚡</span>批量处理</div>
+    <div class="nav" data-s="library"><span class="i">🗂️</span>图库与索引</div>
+    <div class="nav" data-s="settings"><span class="i">⚙️</span>设置</div>
+    <div class="brandfoot">
+      <img src="assets/lockup_white.png" alt="D·MORE">
+      <svg viewBox="0 0 80 56" xmlns="http://www.w3.org/2000/svg">
+        <path d="M40 6 C24 6 16 17 16 31 C16 47 28 54 40 54 C52 54 64 47 64 31 C64 17 56 6 40 6 Z" fill="#ffffff" fill-opacity="0.05" stroke="#ffd56b" stroke-width="2.2"/>
+        <path d="M40 9 q-5 6 0 12 q5 -6 0 -12" fill="#ffd56b"/>
+        <path d="M23 28 q8 -7 14 -1" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round"/>
+        <path d="M43 27 q6 -6 14 1" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round"/>
+        <ellipse cx="30" cy="36" rx="5.6" ry="3.4" fill="#fff"/><ellipse cx="50" cy="36" rx="5.6" ry="3.4" fill="#fff"/>
+        <circle cx="30" cy="36" r="1.6" fill="#a50d24"/><circle cx="50" cy="36" r="1.6" fill="#a50d24"/>
+        <path d="M22 46 q5 5 0 10" fill="none" stroke="#ffd56b" stroke-width="2" stroke-linecap="round"/>
+        <path d="M58 46 q-5 5 0 10" fill="none" stroke="#ffd56b" stroke-width="2" stroke-linecap="round"/>
+        <path d="M32 49 q8 6 16 0" fill="none" stroke="#fff" stroke-width="2.4" stroke-linecap="round"/>
+      </svg>
+      <div class="cap">智 能 脸 谱</div>
+    </div>
+  </aside>
+
+  <!-- 主区 -->
+  <main class="main">
+
+    <!-- 仪表盘 -->
+    <section class="screen show" id="dashboard">
+      <div class="head"><h1>仪表盘</h1><p>图库总览 · 全部本地索引</p><div class="spacer"></div>
+        <button class="btn ghost">↻ 更新索引</button><button class="btn">+ 导入文件夹</button></div>
+      <div class="grid-stat">
+        <div class="card stat"><div class="n" id="st-img">—</div><div class="l">照片总数</div><div class="t">已索引</div></div>
+        <div class="card stat"><div class="n" id="st-face">—</div><div class="l">含人物照片</div><div class="t">人脸索引</div></div>
+        <div class="card stat"><div class="n" id="st-vid">—</div><div class="l">视频文件</div><div class="t">可抽帧索引</div></div>
+        <div class="card stat"><div class="n" id="st-top">—</div><div class="l">最大内容类</div><div class="t">零样本标签</div></div>
+      </div>
+      <div class="row2">
+        <div class="card pad">
+          <b>内容分布</b>
+          <div id="dist"><div class="muted" style="font-size:12px;padding:10px 0">加载中…</div></div>
+          <hr style="border:none;border-top:1px solid var(--line);margin:14px 0">
+          <b>拍摄时间热力图（按 EXIF）</b>
+          <div class="heat" style="margin-top:10px" id="heat"></div>
+        </div>
+        <div class="card pad">
+          <b>最近识别的人物</b>
+          <div class="people" style="grid-template-columns:repeat(3,1fr);margin-top:12px">
+            <div class="person"><div class="ava"><img src="assets/thumbs/model_12.jpg"></div><div class="nm">人物 A</div><div class="ct">86 张</div></div>
+            <div class="person"><div class="ava"><img src="assets/thumbs/model_15.jpg"></div><div class="nm">人物 B</div><div class="ct">52 张</div></div>
+            <div class="person"><div class="ava"><img src="assets/thumbs/model_18.jpg"></div><div class="nm">未命名</div><div class="ct">41 张</div></div>
+          </div>
+          <hr style="border:none;border-top:1px solid var(--line);margin:14px 0">
+          <b>快捷操作</b>
+          <div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:10px">
+            <span class="chip">挑工厂生产场景</span><span class="chip">筛模特图</span>
+            <span class="chip">找白底产品图</span><span class="chip">去重清理</span><span class="chip">导出电商主图</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 语义搜索 -->
+    <section class="screen" id="search">
+      <div class="head"><h1>语义搜索</h1><p>中文 CLIP · 按内容找图，支持多词与排除词</p></div>
+      <div class="toolbar">
+        <input class="input" id="q-scene" style="width:340px" value="工厂 车间 生产线 工人作业">
+        <span class="slider">相似度 <input type="range" id="th-scene" min="25" max="50" value="36"> <b id="thv-scene">0.36</b></span>
+        <button class="btn" data-act="scene">🔍 搜索</button>
+        <div class="spacer" style="flex:1"></div>
+        <button class="btn ghost" data-act="export-scene">📁 导出结果</button>
+      </div>
+      <div class="note">💡 联想：可保存为「智能相册」，新照片自动归入；也可对某张结果「以图搜图」找同款。</div>
+      <div class="gallery" id="g-search" style="margin-top:14px"></div>
+    </section>
+
+    <!-- 以图搜图 -->
+    <section class="screen" id="similar">
+      <div class="head"><h1>以图搜图</h1><p>找相似/同款 · 也可框选图中区域局部搜</p></div>
+      <div class="split">
+        <div>
+          <div class="toolbar"><span class="chip on">整图相似</span><span class="chip">同款产品</span><span class="chip">同一场景</span><span class="chip">局部框选</span>
+            <span class="slider">相似度 <input type="range" value="60"> 0.60</span></div>
+          <div class="gallery" id="g-similar"></div>
+        </div>
+        <div class="card pad insp">
+          <h3>参考图</h3>
+          <img src="assets/thumbs/product_22.jpg" style="width:100%;border-radius:10px;margin:8px 0">
+          <div class="kv"><span>识别内容</span><b>护目镜·白底产品图</b></div>
+          <div class="kv"><span>主色</span><b>白 / 蓝</b></div>
+          <div class="kv"><span>找到相似</span><b>47 张</b></div>
+          <button class="btn" style="width:100%;margin-top:12px">用这张找同款</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- 人物图谱 -->
+    <section class="screen" id="people">
+      <div class="head"><h1>人物图谱</h1><p>InsightFace 自动聚类 · 同一个人跨时间换装自动归组，可命名建档</p>
+        <div class="spacer"></div><button class="btn" data-act="people">↻ 开始聚类</button></div>
+      <div class="toolbar"><span class="chip on">全部 38 人</span><span class="chip">已命名 6</span><span class="chip">未命名 32</span>
+        <span class="chip">单人</span><span class="chip">合影</span>
+        <div class="spacer" style="flex:1"></div><span class="muted" style="font-size:12px">点头像看此人全部照片与时间线</span></div>
+      <div class="people" id="g-people"></div>
+    </section>
+
+    <!-- 找某个人 -->
+    <section class="screen" id="findperson">
+      <div class="head"><h1>找某个人</h1><p>上传 1~3 张参考正脸，跨全库找同一个人（换衣服/跨年份也认）</p></div>
+      <div class="split">
+        <div>
+          <div class="toolbar"><span class="slider">阈值 <input type="range" id="th-find" min="20" max="55" value="35"> <b id="thv-find">0.35</b>（宽松↔严格）</span>
+            <button class="btn" data-act="find">🎯 查找</button>
+            <button class="btn ghost" data-act="export-find">📁 导出结果</button></div>
+          <div class="gallery" id="g-find"></div>
+        </div>
+        <div class="card pad insp">
+          <h3>参考脸</h3>
+          <div class="facebox" id="ref-preview"></div>
+          <label style="display:block;border:2px dashed var(--line);border-radius:10px;padding:18px;text-align:center;color:var(--sub);font-size:12px;cursor:pointer">＋ 选择参考正脸（1~3 张）
+            <input type="file" id="ref-files" accept="image/*" multiple style="display:none"></label>
+          <div class="kv" id="find-info" style="margin-top:10px"><span>状态</span><b>等待参考脸</b></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 同框关系 -->
+    <section class="screen" id="cooccur">
+      <div class="head"><h1>同框关系</h1><p>谁和谁经常出现在同一张照片 · 关系网络</p></div>
+      <div class="row2">
+        <div class="card pad" style="min-height:320px">
+          <b>关系网络图</b>
+          <div style="height:300px;display:grid;place-items:center;color:var(--sub);position:relative">
+            <svg width="100%" height="100%" style="position:absolute;inset:0">
+              <line x1="50%" y1="50%" x2="25%" y2="30%" stroke="#d8b" stroke-width="3"/>
+              <line x1="50%" y1="50%" x2="78%" y2="35%" stroke="#dca" stroke-width="2"/>
+              <line x1="50%" y1="50%" x2="30%" y2="75%" stroke="#cce" stroke-width="2"/>
+              <line x1="25%" y1="30%" x2="78%" y2="35%" stroke="#eee" stroke-width="1.5"/>
+            </svg>
+            <span class="muted">（真实版用力导向图渲染人物节点）</span>
+          </div>
+        </div>
+        <div class="card pad">
+          <b>最常同框</b>
+          <div class="list" id="cooccur-list"><div class="muted" style="padding:16px">分析中…</div></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 智能标签 -->
+    <section class="screen" id="tags">
+      <div class="head"><h1>智能标签</h1><p>零样本自动打标 · 自定义标签体系，CLIP 给每张图归类</p>
+        <div class="spacer"></div><button class="btn" data-act="tags">▶ 全库打标</button></div>
+      <div class="toolbar">
+        <span class="tagpill" style="background:#ffe6e6">🏭 工厂生产 · 234</span>
+        <span class="tagpill" style="background:#e6f0ff">🛍️ 白底产品 · 1,120</span>
+        <span class="tagpill" style="background:#e8f7ee">🏃 使用场景 · 612</span>
+        <span class="tagpill" style="background:#fff3e0">🧍 模特展示 · 142</span>
+        <span class="tagpill" style="background:#f3e8ff">📐 设施安装 · 188</span>
+        <span class="tagpill" style="background:#eef0f3">📝 含文字/海报 · 503</span>
+        <span class="tagpill" style="background:#eef0f3">📦 包装/物流 · 76</span>
+        <span class="chip">＋ 自定义…</span>
+      </div>
+      <div class="card pad"><b>标签：🏭 工厂生产（234 张）</b>
+        <div class="gallery" id="g-tags" style="margin-top:12px"></div></div>
+    </section>
+
+    <!-- 自动相册 -->
+    <section class="screen" id="albums">
+      <div class="head"><h1>自动相册</h1><p>按内容自动聚类成相册，无需人工分类</p></div>
+      <div class="gallery" style="grid-template-columns:repeat(auto-fill,minmax(220px,1fr))" id="g-albums"></div>
+    </section>
+
+    <!-- 去重清理 -->
+    <section class="screen" id="dedup">
+      <div class="head"><h1>去重清理</h1><p>检测重复/近似图，每组保留第1张、其余可批量移到回收区（不删除）</p>
+        <div class="spacer"></div><span class="pill" id="dedup-stat">—</span><button class="btn ghost" data-act="dedup">↻ 检测</button><button class="btn" data-act="dedup-clean">移入回收区</button></div>
+      <div class="note">⚠️ 严格遵守「只移动不删除」：清理 = 把每组除第1张外的图<b>移动</b>到「待删除」文件夹 + 生成还原清单，确认后你再手动删。</div>
+      <div id="dedup-list" style="margin-top:14px"><div class="muted" style="padding:20px">点「检测」开始查找重复/近似图…</div></div>
+    </section>
+
+    <!-- 质量筛选 -->
+    <section class="screen" id="quality">
+      <div class="head"><h1>质量筛选</h1><p>清晰度/曝光/正脸质量评分，挑废片或选最佳</p></div>
+      <div class="toolbar"><span class="chip on" data-q="blur">模糊片</span><span class="chip" data-q="dark">偏暗</span><span class="chip" data-q="bright">过曝</span><span class="chip" data-q="sharp">最清晰</span>
+        <button class="btn ghost" data-act="export-quality" style="margin-left:auto">📁 导出当前</button></div>
+      <div class="muted" id="quality-info" style="font-size:12px;margin-bottom:8px"></div>
+      <div class="gallery" id="g-quality"></div>
+    </section>
+
+    <!-- 电商选图台 -->
+    <section class="screen" id="industry">
+      <div class="head"><h1>电商选图台</h1><p>面向你的运动装备业务：一键分流产品图 / 模特图 / 场景图 / 工厂图，直接出素材</p></div>
+      <div class="toolbar">
+        <span class="seg" id="ind-seg"><button class="on" data-cat="白底主图">白底主图</button><button data-cat="模特图">模特图</button><button data-cat="使用场景">使用场景</button><button data-cat="工厂实拍">工厂实拍</button><button data-cat="细节图">细节图</button></span>
+        <span class="muted" id="ind-info" style="font-size:12px"></span>
+        <div class="spacer" style="flex:1"></div>
+        <button class="btn ghost" data-act="export-industry">📁 导出该类</button>
+      </div>
+      <div class="note">💡 联想：可一键生成「电商上架包」——主图+模特图+场景图按产品归档；或套用尺寸/水印批量导出。</div>
+      <div class="gallery" id="g-industry" style="margin-top:14px"></div>
+    </section>
+
+    <!-- 视频检索 -->
+    <section class="screen" id="vsearch">
+      <div class="head"><h1>视频检索</h1><p>抽关键帧 + CLIP/人脸索引 · 按内容或人物搜视频，直接跳到出现的时间点</p></div>
+      <div class="toolbar">
+        <input class="input" id="v-dir" style="width:360px" value="/path/to/your/videos" title="视频文件夹">
+      </div>
+      <div class="toolbar">
+        <input class="input" id="q-video" style="width:300px" value="工厂 流水线 工人作业">
+        <span class="slider">相似度 <input type="range" id="th-video" min="20" max="45" value="26"> <b id="thv-video">0.26</b></span>
+        <button class="btn" data-act="video">🎬 搜索视频</button>
+        <div class="spacer" style="flex:1"></div><span class="muted" id="video-info" style="font-size:12px"></span>
+      </div>
+      <div class="note">💡 每个结果显示命中的<b>时间点</b>，点击跳转播放；可一键把所有命中片段剪出来导出。</div>
+      <div class="gallery" id="g-vsearch" style="grid-template-columns:repeat(auto-fill,minmax(210px,1fr));margin-top:14px"></div>
+    </section>
+
+    <!-- 分镜抽帧 -->
+    <section class="screen" id="vshots">
+      <div class="head"><h1>分镜抽帧</h1><p>自动镜头切分 · 抽高清静帧当产品图/封面，或导出单个镜头</p></div>
+      <div class="toolbar">
+        <input class="input" id="vshot-path" style="width:480px" placeholder="视频文件绝对路径（或在「视频检索」点视频跳转过来）">
+        <button class="btn" data-act="vshots">🎞️ 分镜</button>
+        <span class="muted" id="vshot-info" style="font-size:12px"></span>
+      </div>
+      <div class="split">
+        <div>
+          <div class="player"><img id="vshot-cover" src="assets/thumbs/factory_03.jpg"><span class="pc">▶</span></div>
+          <div class="timeline" id="vtl"></div>
+          <b style="display:block;margin-top:14px" id="vshot-count">镜头分段</b>
+          <div class="filmstrip" id="vfilm"></div>
+        </div>
+        <div class="card pad insp">
+          <h3>视频信息</h3>
+          <div id="vshot-meta"><div class="muted" style="font-size:12px">载入视频后显示</div></div>
+          <div class="note" style="margin-top:12px">点胶片条某镜头 → 可「剪出该镜头」导出（ffmpeg）。</div>
+          <button class="btn" id="vshot-cut" style="width:100%;margin-top:10px" disabled>✂️ 剪出选中镜头</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- 片段导出 -->
+    <section class="screen" id="vclips">
+      <div class="head"><h1>片段导出</h1><p>把「视频检索」命中的片段用 ffmpeg 精确剪出（命中时间点 ±5 秒）</p>
+        <div class="spacer"></div><button class="btn" data-act="vclips-all">✂️ 批量剪出全部</button></div>
+      <div class="note">⚙️ ffmpeg 重编码裁剪，原视频不动；导出到各视频同级「_片段」文件夹，自动命名。先去「视频检索」搜一下，命中结果会列在这里。</div>
+      <div class="card list pad" style="margin-top:14px" id="vclip-list"><div class="muted" style="padding:16px">先在「视频检索」搜索，命中片段会出现在这里。</div></div>
+    </section>
+
+    <!-- 批量处理 -->
+    <section class="screen" id="batch">
+      <div class="head"><h1>批量处理</h1><p>对搜索/筛选结果统一操作 · 全程可还原</p></div>
+      <div class="row2">
+        <div class="card pad">
+          <b>操作</b>
+          <div style="display:flex;flex-direction:column;gap:10px;margin-top:12px">
+            <label><input type="radio" name="op" checked> 复制到文件夹（原图保留）</label>
+            <label><input type="radio" name="op"> 移动到文件夹（+ 生成还原清单）</label>
+            <label><input type="radio" name="op"> 按规则重命名（产品_日期_序号）</label>
+            <label><input type="radio" name="op"> 导出（改尺寸 / 加水印 / 转格式）</label>
+            <label><input type="radio" name="op"> 打包为 ZIP</label>
+            <label style="color:var(--accent)"><input type="radio" name="op"> 🎬 视频：转码/压缩/统一分辨率</label>
+            <label style="color:var(--accent)"><input type="radio" name="op"> 🎬 视频：批量抽封面/抽帧成图</label>
+            <label style="color:var(--accent)"><input type="radio" name="op"> 🎬 视频：批量裁剪命中片段</label>
+          </div>
+          <input class="input" id="batch-dest" style="width:100%;margin-top:12px" value="/path/to/your/photos/输出">
+          <button class="btn" data-act="batch-run" style="width:100%;margin-top:12px" id="batch-btn">对「最近一次结果」执行</button>
+          <div class="muted" id="batch-info" style="font-size:12px;margin-top:8px">先在任意搜索/筛选页出结果，这里对其复制或移动。复制/移动以上面单选为准（其余操作开发中）。</div>
+        </div>
+        <div class="card pad">
+          <b>安全</b>
+          <div class="kv"><span>删除</span><b style="color:var(--accent)">永不删除</b></div>
+          <div class="kv"><span>移动操作</span><b>自动写还原清单</b></div>
+          <div class="kv"><span>一键还原</span><b>支持</b></div>
+          <div class="kv"><span>操作记录</span><b>全程留痕</b></div>
+          <div class="note" style="margin-top:12px">所有「移动」都会在目标文件夹生成 _还原清单.csv，随时一键移回原位。</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 图库与索引 -->
+    <section class="screen" id="library">
+      <div class="head"><h1>图库与索引</h1><p>多图库管理 · 索引/缓存状态</p><div class="spacer"></div><button class="btn">+ 添加图库</button></div>
+      <div class="card list pad">
+        <div class="li"><span style="font-size:20px">🗂️</span><div>示例图库<div class="muted">/path/to/your/photos</div></div>
+          <div style="margin-left:auto;text-align:right"><b>4,673 张</b><div class="muted">CLIP+人脸索引 ✓ 已是最新</div></div></div>
+        <div class="li"><span style="font-size:20px">🗂️</span><div>示例图库2<div class="muted">/path/to/another/library</div></div>
+          <div style="margin-left:auto;text-align:right"><b>未索引</b><div class="muted">点击建立索引</div></div></div>
+        <div class="li"><span style="font-size:20px">➕</span><div class="muted">添加新图库文件夹…</div></div>
+      </div>
+      <div class="card pad" style="margin-top:14px">
+        <b>排除文件夹</b> <span class="muted" style="font-size:12px">（搜索时跳过，避免把输出文件夹算进来）</span>
+        <div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap">
+          <span class="tagpill">工厂生产场景 ✕</span><span class="tagpill">模特图 ✕</span><span class="tagpill">模特照 ✕</span><span class="tagpill">输出 ✕</span><span class="chip">＋ 添加</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- 设置 -->
+    <section class="screen" id="settings">
+      <div class="head"><h1>设置</h1><p>本地引擎与默认参数</p></div>
+      <div class="row2">
+        <div class="card pad">
+          <b>引擎</b>
+          <div class="kv"><span>语义模型</span><b>中文 CLIP ViT-B/16 ▾</b></div>
+          <div class="kv"><span>人脸模型</span><b>InsightFace buffalo_l ▾</b></div>
+          <div class="kv"><span>计算设备</span><b>MPS（Apple 芯片）▾</b></div>
+          <div class="kv"><span>模型下载源</span><b>魔搭 ModelScope ▾</b></div>
+          <div class="kv"><span>pip 镜像</span><b>阿里云</b></div>
+        </div>
+        <div class="card pad">
+          <b>默认阈值</b>
+          <div class="slider" style="margin:12px 0">语义相似度 <input type="range" value="37"> 0.37</div>
+          <div class="slider" style="margin:12px 0">人脸匹配 <input type="range" value="35"> 0.35</div>
+          <div class="slider" style="margin:12px 0">人脸置信度 <input type="range" value="80"> 0.80</div>
+          <hr style="border:none;border-top:1px solid var(--line);margin:14px 0">
+          <b>缓存</b><div class="kv"><span>索引缓存</span><b>1.2 GB · 清理</b></div>
+          <div class="kv"><span>模型权重</span><b>1.0 GB</b></div>
+        </div>
+      </div>
+    </section>
+
+  </main>
+</div>
+
+<script src="app.js"></script>
+</body>
+</html>
