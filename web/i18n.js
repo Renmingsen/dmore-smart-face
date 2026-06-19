@@ -144,6 +144,27 @@ const I18N = {
   "过曝的图": "Overexposed images", "最清晰的图": "Sharpest images",
   "复制（原图保留）": "Copy (keep originals)", "移动（带还原清单，不删除）": "Move (manifest, no delete)",
   "全速": "Full speed", "省电": "Power-save", "未建索引": "Not indexed",
+  // 弹窗（静态）
+  "请先选择参考正脸": "Please select reference face(s) first",
+  "没有结果可导出，请先搜索/查找": "No results to export — search/find first",
+  "请先检测": "Run Detect first",
+  "请先检测，或没有结果": "Run Detect first, or no results",
+  "请填视频路径，或在「视频检索」点视频跳转": "Enter a video path, or click a video in Video Search",
+  "先去视频检索搜索": "Search in Video Search first",
+  "批量剪出完成": "Batch clip export done",
+  "还没有结果，请先在某个页面搜索/筛选": "No results yet — search/filter on a page first",
+  "请填目标文件夹": "Please enter a target folder",
+  "当前仅支持前两项「复制 / 移动」，其余操作开发中": "Only Copy / Move are supported for now; others are WIP",
+  "不能移除当前正在使用的图库，请先切换到别的图库": "Can't remove the active library — switch to another first",
+  "已在列表中": "Already in the list",
+  "从列表移除该图库？(只移除列表项，不删除任何文件)": "Remove this library from the list? (list only, no files deleted)",
+  "清理索引/缩略图缓存？(只删可重建的缓存，不动模型和原图；下次用会自动重建)": "Clear index/thumbnail cache? (rebuildable only; models & originals untouched; rebuilt on next use)",
+  "导出到文件夹（绝对路径）：": "Export to folder (absolute path):",
+  "确定 = 复制（原图保留）\n取消 = 移动（带还原清单，不删除）": "OK = Copy (keep originals)\nCancel = Move (manifest, no delete)",
+  "输入文件夹绝对路径：": "Enter folder absolute path:",
+  // 弹窗（前缀）
+  "搜索失败：": "Search failed: ", "失败：": "Failed: ", "打标失败：": "Tagging failed: ",
+  "导出失败：": "Export failed: ", "切换失败：": "Switch failed: ", "统计失败：": "Stats failed: ",
 };
 
 let CURLANG = localStorage.getItem("dmore_lang") || "zh";
@@ -183,6 +204,30 @@ function setLang(l) { CURLANG = l; localStorage.setItem("dmore_lang", l); applyL
 function toggleLang() { setLang(CURLANG === "en" ? "zh" : "en"); }
 window.t = t; window.setLang = setLang; window.toggleLang = toggleLang;
 window.curLang = () => CURLANG;
+
+// 弹窗消息翻译（拦截 alert/confirm/prompt，不改 app.js）
+const _PREFIX = ["搜索失败：", "失败：", "打标失败：", "导出失败：", "切换失败：", "统计失败："];
+const _CN = s => (s === "复制" ? "Copy" : s === "移动" ? "Move" : s);
+const MSG_RULES = [
+  [/^将把 (\d+) 张重复图.*继续\?$/, m => `Move ${m[1]} duplicate images to a "to-delete" folder (manifest, no delete). Continue?`],
+  [/^剪出 (\S+)–(\S+) 这个镜头\?.*$/, m => `Cut shot ${m[1]}–${m[2]}? (exported to a "_clips" folder next to the video)`],
+  [/^批量剪出 (\d+) 个片段\?$/, m => `Cut all ${m[1]} clips?`],
+  [/^对最近「(.+)」的 (\d+) 张结果执行【(复制|移动)】到\n([\s\S]+) \?$/,
+    m => `Run [${_CN(m[3])}] on the latest "${m[1]}" results (${m[2]} items) to\n${m[4]} ?`],
+];
+function translateMsg(s) {
+  if (CURLANG !== "en" || typeof s !== "string") return s;
+  if (I18N[s] !== undefined) return I18N[s];
+  for (const p of _PREFIX) if (s.startsWith(p)) return (I18N[p] || p) + s.slice(p.length);
+  for (const [re, fn] of MSG_RULES) { const m = s.match(re); if (m) return fn(m); }
+  return s;
+}
+const _alert = window.alert.bind(window);
+const _confirm = window.confirm.bind(window);
+const _prompt = window.prompt.bind(window);
+window.alert = m => _alert(translateMsg(m));
+window.confirm = m => _confirm(translateMsg(m));
+window.prompt = (m, d) => _prompt(translateMsg(m), d);
 
 // 自动翻译动态注入的内容（去抖 + 防循环）
 let _deb = null;
