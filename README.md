@@ -34,3 +34,15 @@ cache/           索引缓存（按目录）   models/  模型权重
 - CLIP：`cn_clip ViT-B-16`（魔搭 ModelScope 下载）
 - 人脸：`InsightFace buffalo_l`
 - pip 走阿里云镜像；HuggingFace 在国内不可用，已改魔搭。
+
+## 版权与开源协议 / License
+
+**Copyright © 2026 DMORE / Renmingsen**
+
+本项目以 **GNU General Public License v3.0 (GPL-3.0-or-later)** 授权开源，
+完整条款见 [`LICENSE`](./LICENSE)。你可自由使用、修改、分发，
+但**分发修改版须同样以 GPL 开源并附源码**。
+
+- 版权与第三方组件声明见 [`NOTICE.md`](./NOTICE.md)。
+- ⚠️ **InsightFace 预训练模型仅限非商业研究用途**；商业使用需另行获取模型授权。
+- DMORE / D·MORE 名称及 Logo 为品牌标识，不在 GPL 授权范围内。

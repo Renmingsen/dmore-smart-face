@@ -20,3 +20,8 @@ __pycache__/
 .DS_Store
 results/
 config.json
+
+# 含个人路径的一次性脚本，不入库
+scan_videos.py
+sample_video_frames.py
+move_videos.py

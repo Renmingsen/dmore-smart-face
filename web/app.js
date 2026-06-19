@@ -1,3 +1,8 @@
+/* DMORE 智能脸谱 (DMORE Vision) — 本地识图工作站
+ * Copyright (C) 2026 DMORE / Renmingsen
+ * Licensed under the GNU General Public License v3.0 or later.
+ * See <https://www.gnu.org/licenses/>. */
+
 // DMORE 智能脸谱 - 前端逻辑
 let DIR = localStorage.getItem('dmore_dir') || "/path/to/your/photos";
 const $  = (s,r=document)=>r.querySelector(s);

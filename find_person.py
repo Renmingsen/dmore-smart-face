@@ -1,3 +1,11 @@
+# DMORE 智能脸谱 (DMORE Vision) — 本地识图工作站
+# Copyright (C) 2026 DMORE / Renmingsen
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version. See <https://www.gnu.org/licenses/>.
+
 """
 在照片堆里找某个特定人物（人脸识别，InsightFace / ArcFace）。
 跨时间、换衣服、不同光线都能认，因为只比对『脸』。
