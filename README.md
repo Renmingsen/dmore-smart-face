@@ -1,5 +1,7 @@
 # DMORE 智能脸谱 · 本地识图工作站
 
+**中文** | [English](./README_EN.md)
+
 基于 **中文 CLIP + InsightFace + ffmpeg** 的本地图片/视频识别软件，全部在本机运行，免费、不联网、照片不外传。
 
 ## 启动
